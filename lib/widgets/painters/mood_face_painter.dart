@@ -1,17 +1,3 @@
-// lib/widgets/painters/mood_face_painter.dart
-//
-// Draws a mood face entirely with Flutter's Canvas API.
-// No images, no emoji, no icon fonts — just drawCircle, drawArc, drawPath,
-// and drawLine as required by the task brief.
-//
-// Three animation inputs drive different visual layers:
-//   [progress]      — timeline tap pulse  (0→1→0 one-shot)
-//   [breathProgress]— idle breathing loop (0→1→0 repeating)
-//   [isSelected]    — picker selection state (brightens fill, intensifies glow)
-//
-// All geometry is normalised to paint bounds — faces scale cleanly
-// at 60px (timeline) or 64px (picker) with identical logic.
-
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -21,13 +7,10 @@ import '../../models/mood_entry.dart';
 class MoodFacePainter extends CustomPainter {
   final MoodType moodType;
 
-  /// Timeline tap pulse. 0.0 = idle, 1.0 = peak of pulse.
   final double progress;
 
-  /// Idle breathing loop value. 0.0 → 1.0 → 0.0 repeating.
   final double breathProgress;
 
-  /// Whether this face is currently selected in the picker.
   final bool isSelected;
 
   const MoodFacePainter({
@@ -46,13 +29,7 @@ class MoodFacePainter extends CustomPainter {
 
   void _drawFace(Canvas canvas, Offset center, double radius) {
     final color = moodType.color;
-
-    // Combined animation intensity — pulse dominates, breath fills the gaps
     final intensity = math.max(progress, breathProgress * 0.4);
-
-    // ------------------------------------------------------------------
-    // 1. Outer glow ring — brightens on selection, breathes at idle
-    // ------------------------------------------------------------------
     if (intensity > 0 || isSelected) {
       final glowOpacity = isSelected
           ? 0.20 + intensity * 0.25
@@ -63,10 +40,6 @@ class MoodFacePainter extends CustomPainter {
         ..maskFilter = MaskFilter.blur(BlurStyle.normal, 12 + intensity * 8);
       canvas.drawCircle(center, glowRadius, glowPaint);
     }
-
-    // ------------------------------------------------------------------
-    // 2. Face background — fills more richly when selected
-    // ------------------------------------------------------------------
     final bgOpacity = isSelected
         ? 0.22 + breathProgress * 0.06
         : 0.12 + breathProgress * 0.04;
@@ -74,10 +47,6 @@ class MoodFacePainter extends CustomPainter {
       ..color = color.withOpacity(bgOpacity)
       ..style = PaintingStyle.fill;
     canvas.drawCircle(center, radius, bgPaint);
-
-    // ------------------------------------------------------------------
-    // 3. Border — thicker and brighter when selected
-    // ------------------------------------------------------------------
     final borderWidth = isSelected
         ? radius * 0.07 + breathProgress * radius * 0.015
         : radius * 0.05;
@@ -87,26 +56,11 @@ class MoodFacePainter extends CustomPainter {
       ..strokeWidth = borderWidth
       ..strokeCap = StrokeCap.round;
     canvas.drawCircle(center, radius, borderPaint);
-
-    // ------------------------------------------------------------------
-    // 4. Eyes
-    // ------------------------------------------------------------------
     _drawEyes(canvas, center, radius, color);
 
-    // ------------------------------------------------------------------
-    // 5. Eyebrows
-    // ------------------------------------------------------------------
     _drawEyebrows(canvas, center, radius, color);
-
-    // ------------------------------------------------------------------
-    // 6. Mouth
-    // ------------------------------------------------------------------
     _drawMouth(canvas, center, radius, color);
 
-    // ------------------------------------------------------------------
-    // 7. Inner shine — a crescent highlight arc at top of face when selected
-    //    This gives the face a "lit from above" premium glass effect.
-    // ------------------------------------------------------------------
     if (isSelected || progress > 0) {
       final shineOpacity = isSelected
           ? 0.12 + breathProgress * 0.08
@@ -116,7 +70,6 @@ class MoodFacePainter extends CustomPainter {
         ..style = PaintingStyle.stroke
         ..strokeWidth = radius * 0.12
         ..strokeCap = StrokeCap.round;
-      // Small arc across the top quarter of the face
       final shineRect = Rect.fromCenter(
         center: Offset(center.dx, center.dy - radius * 0.15),
         width: radius * 1.0,
@@ -125,16 +78,11 @@ class MoodFacePainter extends CustomPainter {
       canvas.drawArc(shineRect, math.pi + 0.4, math.pi - 0.8, false, shinePaint);
     }
   }
-
-  // -----------------------------------------------------------------------
-  // Eyes
-  // -----------------------------------------------------------------------
   void _drawEyes(Canvas canvas, Offset center, double radius, Color color) {
     final eyeY = center.dy - radius * 0.18;
     final eyeOffsetX = radius * 0.32;
     final eyeRadius = radius * 0.10;
 
-    // Eyes brighten slightly when selected
     final eyeColor = isSelected ? color : color.withOpacity(0.85);
 
     final fillPaint = Paint()
@@ -148,7 +96,6 @@ class MoodFacePainter extends CustomPainter {
     canvas.drawCircle(
         Offset(center.dx + eyeOffsetX, eyeY + dropY), eyeRadius, fillPaint);
 
-    // White sparkle in each eye
     final highlightPaint = Paint()
       ..color = Colors.white.withOpacity(0.75)
       ..style = PaintingStyle.fill;
@@ -160,10 +107,6 @@ class MoodFacePainter extends CustomPainter {
         Offset(center.dx + eyeOffsetX + hlRadius, eyeY + dropY - hlRadius),
         hlRadius, highlightPaint);
   }
-
-  // -----------------------------------------------------------------------
-  // Eyebrows
-  // -----------------------------------------------------------------------
   void _drawEyebrows(Canvas canvas, Offset center, double radius, Color color) {
     final browPaint = Paint()
       ..color = color.withOpacity(isSelected ? 1.0 : 0.8)
@@ -212,9 +155,6 @@ class MoodFacePainter extends CustomPainter {
     );
   }
 
-  // -----------------------------------------------------------------------
-  // Mouth
-  // -----------------------------------------------------------------------
   void _drawMouth(Canvas canvas, Offset center, double radius, Color color) {
     final mouthPaint = Paint()
       ..color = color.withOpacity(isSelected ? 1.0 : 0.85)
@@ -262,7 +202,6 @@ class MoodFacePainter extends CustomPainter {
     canvas.drawPath(path, fillPaint);
     canvas.drawArc(smileRect, 0, math.pi, false, paint);
 
-    // Blush circles — more vivid when selected
     final blushPaint = Paint()
       ..color = color.withOpacity(isSelected ? 0.38 : 0.25)
       ..style = PaintingStyle.fill;
