@@ -1,13 +1,3 @@
-// lib/widgets/timeline_section.dart
-//
-// Animation upgrades in this file:
-//
-//   _TimelineCard — now StatefulWidget with:
-//     • Slide-in from right + fade on first build (entrance)
-//     • Floating lift (translateY -4px) + scale-up when highlighted
-//     • Shimmer sweep effect across card on highlight
-//     • Smooth AnimatedContainer transitions on all decoration properties
-
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -94,10 +84,6 @@ class TimelineSection extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Timeline card — stateful for entrance + shimmer
-// ---------------------------------------------------------------------------
-
 class _TimelineCard extends StatefulWidget {
   final MoodEntry entry;
   final bool isHighlighted;
@@ -120,12 +106,9 @@ class _TimelineCard extends StatefulWidget {
 
 class _TimelineCardState extends State<_TimelineCard>
     with TickerProviderStateMixin {
-  // Slide-in from right on first appear
   late final AnimationController _entranceController;
   late final Animation<double> _fadeAnim;
   late final Animation<Offset> _slideAnim;
-
-  // Shimmer sweep when highlighted
   late final AnimationController _shimmerController;
   late final Animation<double> _shimmerAnim;
 
@@ -153,7 +136,6 @@ class _TimelineCardState extends State<_TimelineCard>
       if (mounted) _entranceController.forward();
     });
 
-    // Shimmer: sweeps left→right when highlighted
     _shimmerController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 700),
@@ -345,10 +327,6 @@ class _TimelineCardState extends State<_TimelineCard>
   }
 }
 
-// ---------------------------------------------------------------------------
-// Shimmer overlay — diagonal light sweep painted on canvas
-// ---------------------------------------------------------------------------
-
 class _ShimmerOverlay extends StatelessWidget {
   final double progress; // 0 → 1
   final Color color;
@@ -371,12 +349,10 @@ class _ShimmerPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    // Sweep a diagonal light band from left to right
     final sweepX = -size.width * 0.5 + progress * size.width * 1.8;
     const bandWidth = 60.0;
     const angle = math.pi / 4; // 45°
 
-    // Build a rotated gradient rectangle
     final rect = Rect.fromLTWH(sweepX - bandWidth / 2, 0, bandWidth, size.height);
     final paint = Paint()
       ..shader = LinearGradient(
@@ -402,10 +378,6 @@ class _ShimmerPainter extends CustomPainter {
   bool shouldRepaint(_ShimmerPainter old) =>
       old.progress != progress || old.color != color;
 }
-
-// ---------------------------------------------------------------------------
-// Empty state
-// ---------------------------------------------------------------------------
 
 class _EmptyTimeline extends StatelessWidget {
   @override

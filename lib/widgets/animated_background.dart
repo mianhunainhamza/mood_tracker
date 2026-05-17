@@ -1,21 +1,8 @@
-// lib/widgets/animated_background.dart
-//
-// Ambient background with floating orbs that slowly drift and shift colour
-// to match the currently selected mood.
-//
-// Architecture:
-//   - Self-contained StatefulWidget with its own AnimationController loop.
-//   - Accepts [accentColor] from outside — changes are animated via
-//     AnimatedContainer-equivalent lerp in the painter.
-//   - Uses a CustomPainter so zero Flutter widget tree overhead —
-//     just one paint call per frame on a dedicated layer.
-
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
 class AnimatedBackground extends StatefulWidget {
-  /// The colour to tint the ambient orbs toward — driven by selected mood.
   final Color accentColor;
 
   const AnimatedBackground({super.key, required this.accentColor});
@@ -27,15 +14,12 @@ class AnimatedBackground extends StatefulWidget {
 class _AnimatedBackgroundState extends State<AnimatedBackground>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
-
-  /// Smoothly interpolated accent color — prevents hard jumps when mood changes.
   Color _currentColor = const Color(0xFF1A1F2E);
   Color _targetColor = const Color(0xFF1A1F2E);
 
   @override
   void initState() {
     super.initState();
-    // Slow drift loop — 12 second full cycle.
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 12),
@@ -47,13 +31,11 @@ class _AnimatedBackgroundState extends State<AnimatedBackground>
     super.didUpdateWidget(oldWidget);
     if (oldWidget.accentColor != widget.accentColor) {
       _targetColor = widget.accentColor;
-      // Animate toward target color over next few frames.
       _animateColor();
     }
   }
 
   Future<void> _animateColor() async {
-    // 60 steps over ~400ms — smooth lerp without needing a second controller.
     final start = _currentColor;
     final end = _targetColor;
     for (int i = 1; i <= 60; i++) {
@@ -86,10 +68,6 @@ class _AnimatedBackgroundState extends State<AnimatedBackground>
   }
 }
 
-// ---------------------------------------------------------------------------
-// Painter — draws 4 large blurred orbs drifting on sine-wave paths
-// ---------------------------------------------------------------------------
-
 class _BackgroundPainter extends CustomPainter {
   final double progress; // 0.0 → 1.0 looping
   final Color accentColor;
@@ -103,10 +81,8 @@ class _BackgroundPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final w = size.width;
     final h = size.height;
-    final t = progress * 2 * math.pi; // full sine cycle
+    final t = progress * 2 * math.pi;
 
-    // Each orb: position driven by sine/cosine with different phases & speeds
-    // so they never overlap in the same pattern twice.
     final orbs = [
       _Orb(
         x: w * 0.15 + math.sin(t * 0.7) * w * 0.12,

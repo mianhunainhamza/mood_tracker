@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 
 import '../models/mood_entry.dart';
@@ -39,7 +38,6 @@ class _MoodFaceWidgetState extends State<MoodFaceWidget>
   void initState() {
     super.initState();
 
-    // Breathing: 3s loop
     _breathController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 3000),
@@ -49,7 +47,6 @@ class _MoodFaceWidgetState extends State<MoodFaceWidget>
       curve: Curves.easeInOut,
     );
 
-    // Bounce: 700ms elastic spring
     _bounceController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 700),
@@ -60,7 +57,6 @@ class _MoodFaceWidgetState extends State<MoodFaceWidget>
     );
     if (widget.isSelected) _bounceController.forward(from: 0);
 
-    // Pulse: 600ms forward/reverse
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 600),
@@ -102,12 +98,10 @@ class _MoodFaceWidgetState extends State<MoodFaceWidget>
     return AnimatedBuilder(
       animation: Listenable.merge([_breathAnim, _bounceAnim, _pulseAnim]),
       builder: (_, __) {
-        // Breathing: ±2.5% when selected, ±1.2% at idle
         final breathScale = widget.isSelected
             ? 1.0 + _breathAnim.value * 0.025
             : 1.0 + _breathAnim.value * 0.012;
 
-        // Bounce: face grows from 85% → 100% with elastic overshoot
         final bounceScale = (widget.isSelected || _bounceAnim.value > 0)
             ? 0.85 + _bounceAnim.value * 0.15
             : 1.0;
