@@ -1,4 +1,3 @@
-
 import 'dart:convert';
 
 import 'package:get/get.dart';
@@ -7,7 +6,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/mood_entry.dart';
 
 class MoodController extends GetxController {
-
   static const _storageKey = 'mood_entries_v1';
 
   static const int timelineLimit = 7;
@@ -23,11 +21,13 @@ class MoodController extends GetxController {
   List<MoodEntry> get timelineEntries =>
       entries.take(timelineLimit).toList(growable: false);
 
+
   @override
   void onInit() {
     super.onInit();
     _loadFromStorage();
   }
+
 
   void selectMood(MoodType mood) => selectedMood.value = mood;
 
@@ -49,6 +49,7 @@ class MoodController extends GetxController {
   }
 
   void tapTimelineEntry(MoodEntry entry) {
+    // Toggling: tapping the same entry dismisses the highlight.
     if (highlightedEntry.value?.id == entry.id) {
       highlightedEntry.value = null;
     } else {
@@ -63,6 +64,7 @@ class MoodController extends GetxController {
     if (highlightedEntry.value?.id == id) highlightedEntry.value = null;
     await _saveToStorage();
   }
+
 
   Future<void> _loadFromStorage() async {
     try {
