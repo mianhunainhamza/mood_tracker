@@ -1,3 +1,14 @@
+// lib/widgets/timeline_section.dart
+//
+// Animation upgrades in this file:
+//
+//   _TimelineCard — now StatefulWidget with:
+//     • Slide-in from right + fade on first build (entrance)
+//     • Floating lift (translateY -4px) + scale-up when highlighted
+//     • Shimmer sweep effect across card on highlight
+//     • Smooth AnimatedContainer transitions on all decoration properties
+
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -18,9 +29,7 @@ class TimelineSection extends StatelessWidget {
     return Obx(() {
       final entries = controller.timelineEntries;
 
-      if (entries.isEmpty) {
-        return _EmptyTimeline();
-      }
+      if (entries.isEmpty) return _EmptyTimeline();
 
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -38,9 +47,9 @@ class TimelineSection extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 2),
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
                     color: Colors.white12,
                     borderRadius: BorderRadius.circular(12),
@@ -48,9 +57,7 @@ class TimelineSection extends StatelessWidget {
                   child: Text(
                     '${entries.length}',
                     style: GoogleFonts.plusJakartaSans(
-                      fontSize: 12,
-                      color: Colors.white60,
-                    ),
+                        fontSize: 12, color: Colors.white60),
                   ),
                 ),
               ],
@@ -58,7 +65,7 @@ class TimelineSection extends StatelessWidget {
           ),
 
           SizedBox(
-            height: 170,
+            height: 180,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               clipBehavior: Clip.none,
@@ -70,9 +77,11 @@ class TimelineSection extends StatelessWidget {
                   final isHighlighted =
                       controller.highlightedEntry.value?.id == entry.id;
                   return _TimelineCard(
+                    key: ValueKey(entry.id),
                     entry: entry,
                     isHighlighted: isHighlighted,
                     isNewest: index == 0,
+                    entranceDelay: Duration(milliseconds: index * 60),
                     onTap: () => controller.tapTimelineEntry(entry),
                   );
                 });
@@ -85,141 +94,324 @@ class TimelineSection extends StatelessWidget {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Timeline card — stateful for entrance + shimmer
+// ---------------------------------------------------------------------------
 
-class _TimelineCard extends StatelessWidget {
+class _TimelineCard extends StatefulWidget {
   final MoodEntry entry;
   final bool isHighlighted;
   final bool isNewest;
+  final Duration entranceDelay;
   final VoidCallback onTap;
 
   const _TimelineCard({
+    super.key,
     required this.entry,
     required this.isHighlighted,
     required this.isNewest,
+    required this.entranceDelay,
     required this.onTap,
   });
 
   @override
+  State<_TimelineCard> createState() => _TimelineCardState();
+}
+
+class _TimelineCardState extends State<_TimelineCard>
+    with TickerProviderStateMixin {
+  // Slide-in from right on first appear
+  late final AnimationController _entranceController;
+  late final Animation<double> _fadeAnim;
+  late final Animation<Offset> _slideAnim;
+
+  // Shimmer sweep when highlighted
+  late final AnimationController _shimmerController;
+  late final Animation<double> _shimmerAnim;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _entranceController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 450),
+    );
+    _fadeAnim = CurvedAnimation(
+      parent: _entranceController,
+      curve: Curves.easeOut,
+    );
+    _slideAnim = Tween<Offset>(
+      begin: const Offset(0.4, 0),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _entranceController,
+      curve: Curves.easeOutCubic,
+    ));
+
+    Future.delayed(widget.entranceDelay, () {
+      if (mounted) _entranceController.forward();
+    });
+
+    // Shimmer: sweeps left→right when highlighted
+    _shimmerController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    );
+    _shimmerAnim = CurvedAnimation(
+      parent: _shimmerController,
+      curve: Curves.easeInOut,
+    );
+
+    if (widget.isHighlighted) _shimmerController.forward(from: 0);
+  }
+
+  @override
+  void didUpdateWidget(_TimelineCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isHighlighted && !oldWidget.isHighlighted) {
+      _shimmerController.forward(from: 0);
+    }
+    if (!widget.isHighlighted && oldWidget.isHighlighted) {
+      _shimmerController.reverse();
+    }
+  }
+
+  @override
+  void dispose() {
+    _entranceController.dispose();
+    _shimmerController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final color = entry.moodType.color;
-    final date = entry.timestamp;
+    final color = widget.entry.moodType.color;
 
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeOut,
-        width: 120,
-        decoration: BoxDecoration(
-          color: isHighlighted
-              ? color.withOpacity(0.18)
-              : Colors.white.withOpacity(0.06),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isHighlighted ? color : Colors.white12,
-            width: isHighlighted ? 2.0 : 1.0,
-          ),
-          boxShadow: isHighlighted
-              ? [
-                  BoxShadow(
-                    color: color.withOpacity(0.35),
-                    blurRadius: 20,
-                    spreadRadius: 2,
-                  )
-                ]
-              : [],
-        ),
-        child: Column(
-          children: [
-            Container(
-              height: 5,
-              decoration: BoxDecoration(
-                color: color,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(19),
-                  topRight: Radius.circular(19),
+    return FadeTransition(
+      opacity: _fadeAnim,
+      child: SlideTransition(
+        position: _slideAnim,
+        child: GestureDetector(
+          onTap: widget.onTap,
+          child: AnimatedBuilder(
+            animation: _shimmerAnim,
+            builder: (_, child) {
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 280),
+                curve: Curves.easeOut,
+                width: 125,
+                // Lift up slightly when highlighted
+                transform: widget.isHighlighted
+                    ? (Matrix4.identity()..translate(0.0, -4.0))
+                    : Matrix4.identity(),
+                transformAlignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: widget.isHighlighted
+                      ? color.withOpacity(0.18)
+                      : Colors.white.withOpacity(0.06),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: widget.isHighlighted ? color : Colors.white12,
+                    width: widget.isHighlighted ? 2.0 : 1.0,
+                  ),
+                  boxShadow: widget.isHighlighted
+                      ? [
+                          BoxShadow(
+                            color: color.withOpacity(0.40),
+                            blurRadius: 24,
+                            spreadRadius: 3,
+                            offset: const Offset(0, 4),
+                          )
+                        ]
+                      : [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.15),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          )
+                        ],
                 ),
-              ),
-            ),
-
-            Expanded(
-              child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    if (isNewest)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: color.withOpacity(0.25),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          'NEW',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 9,
-                            fontWeight: FontWeight.w800,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(19),
+                  child: Stack(
+                    children: [
+                      child!,
+                      // Shimmer overlay — diagonal light sweep
+                      if (_shimmerAnim.value > 0)
+                        Positioned.fill(
+                          child: _ShimmerOverlay(
+                            progress: _shimmerAnim.value,
                             color: color,
-                            letterSpacing: 1,
                           ),
                         ),
-                      )
-                    else
-                      const SizedBox(height: 16),
-
-                    MoodFaceWidget(
-                      moodType: entry.moodType,
-                      size: 60,
-                      animate: isHighlighted,
-                    ),
-
-                    Text(
-                      entry.moodType.label,
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: isHighlighted ? color : Colors.white70,
-                      ),
-                    ),
-
-                    Column(
-                      children: [
-                        Text(
-                          DateFormat('EEE, MMM d').format(date),
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 10,
-                            color: Colors.white30,
-                          ),
-                        ),
-                        Text(
-                          DateFormat('h:mm a').format(date),
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 9,
-                            color: Colors.white30,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ),
-          ],
+              );
+            },
+            child: _buildCardContent(color),
+          ),
         ),
       ),
     );
   }
+
+  Widget _buildCardContent(Color color) {
+    final date = widget.entry.timestamp;
+    return Column(
+      children: [
+        // Top accent strip
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          height: widget.isHighlighted ? 6 : 4,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(19),
+              topRight: Radius.circular(19),
+            ),
+          ),
+        ),
+
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // NEW badge
+                if (widget.isNewest)
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.25),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      'NEW',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w800,
+                        color: color,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                  )
+                else
+                  const SizedBox(height: 16),
+
+                // Face with pulse on highlight
+                MoodFaceWidget(
+                  moodType: widget.entry.moodType,
+                  size: 62,
+                  animate: widget.isHighlighted,
+                  isSelected: false,
+                ),
+
+                // Mood label
+                AnimatedDefaultTextStyle(
+                  duration: const Duration(milliseconds: 200),
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: widget.isHighlighted ? color : Colors.white70,
+                  ),
+                  child: Text(widget.entry.moodType.label),
+                ),
+
+                // Date
+                Column(
+                  children: [
+                    Text(
+                      DateFormat('EEE, MMM d').format(date),
+                      style: GoogleFonts.plusJakartaSans(
+                          fontSize: 10, color: Colors.white30),
+                    ),
+                    Text(
+                      DateFormat('h:mm a').format(date),
+                      style: GoogleFonts.plusJakartaSans(
+                          fontSize: 9, color: Colors.white30),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 }
 
+// ---------------------------------------------------------------------------
+// Shimmer overlay — diagonal light sweep painted on canvas
+// ---------------------------------------------------------------------------
+
+class _ShimmerOverlay extends StatelessWidget {
+  final double progress; // 0 → 1
+  final Color color;
+
+  const _ShimmerOverlay({required this.progress, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      painter: _ShimmerPainter(progress: progress, color: color),
+    );
+  }
+}
+
+class _ShimmerPainter extends CustomPainter {
+  final double progress;
+  final Color color;
+
+  const _ShimmerPainter({required this.progress, required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    // Sweep a diagonal light band from left to right
+    final sweepX = -size.width * 0.5 + progress * size.width * 1.8;
+    const bandWidth = 60.0;
+    const angle = math.pi / 4; // 45°
+
+    // Build a rotated gradient rectangle
+    final rect = Rect.fromLTWH(sweepX - bandWidth / 2, 0, bandWidth, size.height);
+    final paint = Paint()
+      ..shader = LinearGradient(
+        colors: [
+          Colors.transparent,
+          color.withOpacity(0.18),
+          Colors.white.withOpacity(0.12),
+          color.withOpacity(0.18),
+          Colors.transparent,
+        ],
+        stops: const [0, 0.3, 0.5, 0.7, 1],
+      ).createShader(rect);
+
+    canvas.save();
+    canvas.translate(size.width / 2, size.height / 2);
+    canvas.rotate(angle);
+    canvas.translate(-size.width / 2, -size.height / 2);
+    canvas.drawRect(rect, paint);
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(_ShimmerPainter old) =>
+      old.progress != progress || old.color != color;
+}
+
+// ---------------------------------------------------------------------------
+// Empty state
+// ---------------------------------------------------------------------------
 
 class _EmptyTimeline extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 130,
+      height: 140,
       alignment: Alignment.center,
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.04),
@@ -235,9 +427,7 @@ class _EmptyTimeline extends StatelessWidget {
           Text(
             'No entries yet — log your first mood!',
             style: GoogleFonts.plusJakartaSans(
-              fontSize: 13,
-              color: Colors.white30,
-            ),
+                fontSize: 13, color: Colors.white30),
           ),
         ],
       ),
