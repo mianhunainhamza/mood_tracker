@@ -2,7 +2,7 @@
 
 A Flutter web app for logging how you feel. Pick a mood, hit log, done. Your last 7 entries show up in a scrollable timeline — tap any card to see it animate.
 
-> Built with a bit of help from Claude (Anthropic) for boilerplate and structure. All architecture decisions, design choices, and implementation details are my own.
+> Built with a bit of help from Claude (Anthropic) for boilerplate and structure. All architecture decisions, design choices, and implementation details and code are my own.
 
 ---
 
