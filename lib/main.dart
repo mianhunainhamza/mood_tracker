@@ -27,14 +27,12 @@ class MoodTrackerApp extends StatelessWidget {
         useMaterial3: true,
         scaffoldBackgroundColor: const Color(0xFF0D1117),
       ),
-
       initialBinding: BindingsBuilder(() {
         Get.lazyPut<MoodController>(
           () => MoodController(),
           fenix: true,
         );
       }),
-
       home: const HomeView(),
     );
   }
