@@ -1,0 +1,25 @@
+# Flutter / Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+build/
+pubspec.lock          # keep for app (remove this line if you want to pin versions)
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# macOS
+.DS_Store
+
+# Firebase
+.firebase/
+
+# Vercel
+.vercel/
+
+# Environment (never commit secrets)
+.env
+.env.local

@@ -1,0 +1,32 @@
+name: mood_tracker
+description: A Flutter web mood tracker with CustomPainter faces and GetX state management.
+version: 1.0.0+1
+publish_to: 'none'
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+  flutter: '>=3.19.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State management — GetX for reactive state, routing, and DI
+  get: ^4.6.6
+
+  # Local persistence — lightweight key/value store for web
+  shared_preferences: ^2.2.3
+
+  # Date formatting
+  intl: ^0.19.0
+
+  # Google Fonts for polished typography
+  google_fonts: ^6.2.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.1
+
+flutter:
+  uses-material-design: true

@@ -1,0 +1,21 @@
+include: package:flutter_lints/flutter.yaml
+
+linter:
+  rules:
+    # Style
+    prefer_single_quotes: true
+    always_declare_return_types: true
+    prefer_final_locals: true
+    avoid_unnecessary_containers: true
+
+    # GetX-friendly
+    prefer_const_constructors: true
+    prefer_const_declarations: true
+
+    # Error-prevention
+    unawaited_futures: true
+    avoid_print: true
+
+analyzer:
+  errors:
+    invalid_annotation_target: ignore
