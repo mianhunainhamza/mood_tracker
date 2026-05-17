@@ -1,4 +1,3 @@
-
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -38,7 +37,6 @@ class MoodPickerSection extends StatelessWidget {
         ),
         const SizedBox(height: 28),
 
-        // Five mood options with staggered entrance animations
         Obx(
           () => Wrap(
             spacing: 16,
@@ -59,16 +57,12 @@ class MoodPickerSection extends StatelessWidget {
 
         const SizedBox(height: 32),
 
-        // Log button — stateful for press + success animation
         _LogButton(controller: controller),
       ],
     );
   }
 }
 
-// ---------------------------------------------------------------------------
-// Extension to get index in map — replaces mapIndexed pattern
-// ---------------------------------------------------------------------------
 extension _IndexedMap<T> on Iterable<T> {
   Iterable<R> mapIndexed<R>(R Function(int index, T item) f) sync* {
     var i = 0;
@@ -77,10 +71,6 @@ extension _IndexedMap<T> on Iterable<T> {
     }
   }
 }
-
-// ---------------------------------------------------------------------------
-// Individual mood option — staggered entrance + ripple on tap
-// ---------------------------------------------------------------------------
 
 class _MoodOption extends StatefulWidget {
   final MoodType mood;
@@ -102,16 +92,11 @@ class _MoodOption extends StatefulWidget {
 
 class _MoodOptionState extends State<_MoodOption>
     with TickerProviderStateMixin {
-  // Entrance: slide up + fade in, staggered by index
   late final AnimationController _entranceController;
   late final Animation<double> _fadeAnim;
   late final Animation<Offset> _slideAnim;
-
-  // Ripple particles on tap
   late final AnimationController _rippleController;
   late final Animation<double> _rippleAnim;
-
-  // Press scale for tactile feedback
   late final AnimationController _pressController;
   late final Animation<double> _pressAnim;
 
@@ -119,7 +104,6 @@ class _MoodOptionState extends State<_MoodOption>
   void initState() {
     super.initState();
 
-    // --- Entrance ---
     _entranceController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 500),
@@ -136,12 +120,10 @@ class _MoodOptionState extends State<_MoodOption>
       curve: Curves.easeOutCubic,
     ));
 
-    // Stagger each card by 80ms per index
     Future.delayed(Duration(milliseconds: widget.entranceIndex * 80), () {
       if (mounted) _entranceController.forward();
     });
 
-    // --- Ripple ---
     _rippleController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 500),
@@ -151,7 +133,6 @@ class _MoodOptionState extends State<_MoodOption>
       curve: Curves.easeOut,
     );
 
-    // --- Press ---
     _pressController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 100),
@@ -172,9 +153,7 @@ class _MoodOptionState extends State<_MoodOption>
 
   void _handleTap() {
     widget.onTap();
-    // Press compress → release
     _pressController.forward().then((_) => _pressController.reverse());
-    // Ripple burst
     _rippleController.forward(from: 0);
   }
 
@@ -197,7 +176,6 @@ class _MoodOptionState extends State<_MoodOption>
                   clipBehavior: Clip.none,
                   alignment: Alignment.center,
                   children: [
-                    // Ripple particles (8 dots flying outward on tap)
                     if (_rippleController.isAnimating || _rippleAnim.value > 0)
                       ..._buildRippleParticles(color),
 
@@ -262,7 +240,6 @@ class _MoodOptionState extends State<_MoodOption>
     );
   }
 
-  // 8 small circles flying outward in all directions
   List<Widget> _buildRippleParticles(Color color) {
     final t = _rippleAnim.value; // 0 → 1
     const particleCount = 8;
@@ -293,9 +270,6 @@ class _MoodOptionState extends State<_MoodOption>
   }
 }
 
-// ---------------------------------------------------------------------------
-// Log Button — stateful for press + success flash animation
-// ---------------------------------------------------------------------------
 
 class _LogButton extends StatefulWidget {
   final MoodController controller;
@@ -336,11 +310,10 @@ class _LogButtonState extends State<_LogButton>
     if (widget.controller.selectedMood.value == null) return;
 
     setState(() => _showSuccess = true);
-    _successController.forward(from: 0);
+    await _successController.forward(from: 0);
 
     await widget.controller.logMood();
 
-    // Hold success state 900ms then fade out
     await Future.delayed(const Duration(milliseconds: 900));
     if (mounted) {
       await _successController.reverse();

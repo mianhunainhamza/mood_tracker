@@ -1,13 +1,4 @@
-// lib/models/mood_entry.dart
-//
-// Immutable data model for a single mood log entry.
-// Keeps business data decoupled from UI and state layers.
-// Serializes to/from JSON for SharedPreferences persistence.
-
 import 'package:flutter/material.dart';
-
-/// Enum representing the five distinct mood states the user can log.
-/// Each carries a semantic label, a canvas color, and a display name.
 enum MoodType {
   veryHappy,
   happy,
@@ -16,8 +7,6 @@ enum MoodType {
   verySad,
 }
 
-/// Extension so enum values carry their own UI metadata.
-/// Avoids switch-statements scattered through UI code.
 extension MoodTypeX on MoodType {
   String get label {
     switch (this) {
@@ -34,8 +23,6 @@ extension MoodTypeX on MoodType {
     }
   }
 
-  /// Primary accent color associated with each mood — used in
-  /// timeline cards, glow effects, and background tints.
   Color get color {
     switch (this) {
       case MoodType.veryHappy:
@@ -51,7 +38,6 @@ extension MoodTypeX on MoodType {
     }
   }
 
-  /// Serialisation key stored in SharedPreferences JSON.
   String get key => name;
 
   static MoodType fromKey(String key) =>
@@ -59,12 +45,6 @@ extension MoodTypeX on MoodType {
           orElse: () => MoodType.neutral);
 }
 
-/// Single mood log entry — immutable value object.
-///
-/// [id]        : unique identifier (timestamp-based)
-/// [moodType]  : which mood was selected
-/// [timestamp] : when the entry was created
-/// [note]      : optional user note (future feature, stored but unused)
 class MoodEntry {
   final String id;
   final MoodType moodType;
@@ -77,11 +57,6 @@ class MoodEntry {
     required this.timestamp,
     this.note,
   });
-
-  // ---------------------------------------------------------------------------
-  // Serialisation
-  // ---------------------------------------------------------------------------
-
   Map<String, dynamic> toJson() => {
         'id': id,
         'moodType': moodType.key,
@@ -95,10 +70,6 @@ class MoodEntry {
         timestamp: DateTime.parse(json['timestamp'] as String),
         note: json['note'] as String?,
       );
-
-  // ---------------------------------------------------------------------------
-  // Value equality — important for GetX reactive list comparisons
-  // ---------------------------------------------------------------------------
 
   @override
   bool operator ==(Object other) =>
