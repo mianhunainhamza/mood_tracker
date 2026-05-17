@@ -16,7 +16,6 @@ void main() {
   group('MoodController', () {
     test('initial state is empty and not loading after init', () async {
       final ctrl = MoodController();
-      // Wait for onInit async loading.
       await Future.delayed(const Duration(milliseconds: 50));
       expect(ctrl.entries, isEmpty);
       expect(ctrl.isLoading.value, false);
